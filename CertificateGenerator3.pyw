@@ -5,6 +5,7 @@ from email.message import EmailMessage
 from PIL import Image, ImageDraw, ImageFont
 import arabic_reshaper
 from bidi.algorithm import get_display
+from threading import Thread
 
 font = ImageFont.truetype('arial.ttf',30)
 
@@ -16,35 +17,45 @@ def reshape(something):
     bidi_text = get_display(reshaped_text)
     return bidi_text
 
-def generateCertificate():
-    with open('Data3.csv', 'r', encoding='UTF-8') as f:
+def generateCertificate(studentData):
+    
         Emails = []
         Names = []
-        for i, line in enumerate(f):
-            if i == 0: continue
-            Position, Name, Email, Id= line.strip().split(',')
-            img = Image.open('samples/Certificate Image 3.jpeg')
-            bidi_Position = reshape(Position)
-            bidi_Name = reshape(Name)
-            draw = ImageDraw.Draw(img)
-            Emails += [Email]
-            Names += [Name]
 
-            xPosition, yPosition = (730, 300)
-            xName, yName = (700, 300)
-            xId, yId = (205, 300)
-
-            wPosition, hPosition = draw.textsize(bidi_Position, font=font)
-            wName, hName = draw.textsize(bidi_Name, font=font)
-            wId, hId = draw.textsize(Id, font=font)
-
-            draw.text(xy=(xPosition-wPosition, yPosition), text=f'{bidi_Position}', fill=(0,0,0), font=font)
-            draw.text(xy=(xName-wName, yName), text=f'{bidi_Name}', fill=(0,0,0), font=font)
-            draw.text(xy=(xId-wId, yId), text=f'{Id}', fill=(0,0,0), font=font)
-
-            img_fname = f'{Names[i-1]} \'s Certificate.png'
-            img.save(f'pictures/{img_fname}')
+        Position, Name, Email, Id = studentData.strip().split(',')
+        img = Image.open('samples/Certificate Image 3.jpeg')
+        bidi_Position = reshape(Position)
+        bidi_Name = reshape(Name)
+        draw = ImageDraw.Draw(img)
+        Emails += [Email]
+        Names += [Name]
+        xPosition, yPosition = (730, 300)
+        xName, yName = (700, 300)
+        xId, yId = (205, 300)
+        wPosition, hPosition = draw.textsize(bidi_Position, font=font)
+        wName, hName = draw.textsize(bidi_Name, font=font)
+        wId, hId = draw.textsize(Id, font=font)
+        draw.text(xy=(xPosition-wPosition, yPosition), text=f'{bidi_Position}', fill=(0,0,0), font=font)
+        draw.text(xy=(xName-wName, yName), text=f'{bidi_Name}', fill=(0,0,0), font=font)
+        draw.text(xy=(xId-wId, yId), text=f'{Id}', fill=(0,0,0), font=font)
+        img_fname = f'{Names[i-1]} \'s Certificate.png'
+        img.save(f'pictures/{img_fname}')
         return Emails, Names
+
+with open('Data3.csv', 'r', encoding='UTF-8') as f:
+
+    threads = []
+
+    for i, studentData in enumerate(f):
+        if i == 0: continue
+        
+        thread = Thread(target=generateCertificate, args=(studentData,))
+        threads.append(thread)
+        thread.start()
+        
+    for thread in threads: 
+        thread.join() # wait for completion
+
 
 def sendEmail():
     Names = []
